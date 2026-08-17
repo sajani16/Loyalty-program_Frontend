@@ -7,8 +7,10 @@ declare module "next-auth" {
       email: string;
       name: string;
       userType: string;
+      role?: string | Record<string, unknown>;
     };
     accessToken: string;
+    accessTokenExpires?: number;
   }
 
   interface User {
@@ -16,18 +18,23 @@ declare module "next-auth" {
     email: string;
     name: string;
     userType: string;
+    role?: string | Record<string, unknown>;
     accessToken: string;
+    accessTokenExpires?: number;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     accessToken: string;
+    accessTokenExpires?: number;
+
     user: {
       id: string;
       email: string;
       name: string;
       userType: string;
+      role?: string | Record<string, unknown>;
     };
   }
 }

@@ -29,26 +29,56 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/auth/verify-otp") ||
     pathname.startsWith("/auth/reset-password");
 
-  // Protected pages that require authentication
-  const protectedPages = ["/dashboard", "/plans/checkout"];
+  // ─── Protected routes ───────────────────────────────────────────
+  const isProtectedMerchant = pathname.startsWith("/merchant");
+  const isProtectedCustomer = pathname.startsWith("/customer");
+  const isProtectedLegacy = ["/dashboard", "/plans/checkout"].some((p) =>
+    pathname.startsWith(p),
+  );
 
-  // Stripe redirect targets — must stay public (session may not be ready yet)
+  const isProtected =
+    isProtectedMerchant || isProtectedCustomer || isProtectedLegacy;
+
+  // Stripe redirect targets — must stay public
   const isPublicBillingResult =
     pathname.startsWith("/billing/success") ||
     pathname.startsWith("/billing/cancel");
 
-  // If user is not logged in and tries to access protected pages, redirect to login
-  if (
-    !token &&
-    !isPublicBillingResult &&
-    protectedPages.some((page) => pathname.startsWith(page))
-  ) {
+  // ─── Unauthenticated → Login ─────────────────────────────────────
+  if (!token && !isPublicBillingResult && isProtected) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
+
+    // Infer userType from attempted route for a better UX
+    if (isProtectedMerchant) {
+      loginUrl.searchParams.set("userType", "business");
+    } else {
+      loginUrl.searchParams.set("userType", "customer");
+    }
+
     return NextResponse.redirect(loginUrl);
   }
 
-  // Logged-in user hitting auth pages — unless session was invalidated client-side
+  // ─── Role-based cross-access guard ───────────────────────────────
+  if (token && isProtected) {
+    const userType = (token.user as { userType?: string })?.userType;
+
+    // Merchant trying to access customer routes
+    if (isProtectedCustomer && userType === "business") {
+      return NextResponse.redirect(
+        new URL("/merchant/dashboard", request.url),
+      );
+    }
+
+    // Customer trying to access merchant routes
+    if (isProtectedMerchant && userType === "customer") {
+      return NextResponse.redirect(
+        new URL("/customer/dashboard", request.url),
+      );
+    }
+  }
+
+  // ─── Logged-in user hitting auth pages ───────────────────────────
   if (token && pathname.startsWith("/auth")) {
     if (sessionExpired) {
       const response = NextResponse.next();
@@ -56,7 +86,11 @@ export async function middleware(request: NextRequest) {
       return response;
     }
     if (!isPasswordRecovery) {
-      return NextResponse.redirect(new URL("/dashboard/sign-documents", request.url));
+      // Redirect to appropriate dashboard based on role
+      const userType = (token.user as { userType?: string })?.userType;
+      const dashboardUrl =
+        userType === "business" ? "/merchant/dashboard" : "/customer/dashboard";
+      return NextResponse.redirect(new URL(dashboardUrl, request.url));
     }
   }
 
@@ -69,5 +103,7 @@ export const config = {
     "/dashboard/:path*",
     "/billing/:path*",
     "/plans/checkout/:path*",
+    "/merchant/:path*",
+    "/customer/:path*",
   ],
 };

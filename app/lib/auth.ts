@@ -8,6 +8,7 @@ interface ExtendedUser extends User {
   email: string;
   name: string;
   userType: string;
+  role?: string | Record<string, unknown>;
   accessToken: string;
 }
 
@@ -25,6 +26,10 @@ export const authOptions: NextAuthOptions = {
           label: "Password",
           type: "password",
         },
+        userType: {
+          label: "User Type",
+          type: "text",
+        },
       },
 
       async authorize(credentials) {
@@ -32,13 +37,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Missing API base URL");
         }
 
-        // Make sure email and password were provided
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
-        // Send login request to your Express backend
-        const res = await fetch(`${API_URL}/user/auth/login`, {
+        const res = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -46,42 +49,39 @@ export const authOptions: NextAuthOptions = {
           body: JSON.stringify({
             email: credentials.email,
             password: credentials.password,
+            userType: credentials.userType || "customer",
           }),
         });
 
         const result = await res.json();
 
-        // Backend rejected login
         if (!res.ok || !result?.success) {
           throw new Error(result?.message || "Invalid credentials");
         }
 
-        // Get user returned by your backend
         const apiUser = result.data?.user;
 
         if (!apiUser) {
           throw new Error("User data not found");
         }
 
-        // Give NextAuth the user information
         return {
           id: apiUser.id || apiUser._id,
           email: apiUser.email,
           name: apiUser.name,
-          userType: apiUser.userType,
-          accessToken: result.data.token,
+          userType: apiUser.userType || credentials.userType || "customer",
+          role: apiUser.role,
+          accessToken: result.data.accessToken || result.data.token,
         } as ExtendedUser;
       },
     }),
   ],
 
-  // NextAuth manages the session using JWT
   session: {
     strategy: "jwt",
   },
 
   callbacks: {
-    // Runs when NextAuth creates/updates its JWT
     async jwt({ token, user }) {
       if (user) {
         const extendedUser = user as ExtendedUser;
@@ -91,6 +91,7 @@ export const authOptions: NextAuthOptions = {
           email: extendedUser.email,
           name: extendedUser.name,
           userType: extendedUser.userType,
+          role: extendedUser.role,
         };
 
         token.accessToken = extendedUser.accessToken;
@@ -99,7 +100,6 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
 
-    // Runs when your application asks for the session
     async session({ session, token }) {
       if (token.user) {
         session.user = token.user as ExtendedUser;
