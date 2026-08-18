@@ -16,11 +16,19 @@ import {
   Utensils,
   ShoppingBag,
   Loader2,
+  TrendingUp,
+  Zap,
 } from "lucide-react";
 import QRScannerModal from "./QRScannerModal";
+import { MembershipDetailsModal } from "@/components/customer/MembershipDetailsModal";
 import { toast } from "@/hooks/use-toast";
-import { useCustomerProfile, useCustomerMemberships } from "../api";
+import {
+  useCustomerProfile,
+  useCustomerMemberships,
+  useScanQRMutation,
+} from "../api";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { CustomerMembership } from "@/services/customer.service";
 
 function getBusinessIcon(name: string) {
   const lower = name.toLowerCase();
@@ -107,16 +115,29 @@ function CustomerNavbar({
 export default function CustomerDashboard() {
   const { data: session } = useSession();
   const [showScanner, setShowScanner] = useState(false);
+  const [selectedMembership, setSelectedMembership] = useState<CustomerMembership | null>(null);
+  const [showMembershipDetails, setShowMembershipDetails] = useState(false);
 
   const { data: customerProfile } = useCustomerProfile();
   const { data: memberships, isLoading: membershipsLoading } = useCustomerMemberships();
+  const scanQRMutation = useScanQRMutation();
 
   const userName = customerProfile?.name || session?.user?.name || "Customer";
   const membershipList = memberships || [];
   const totalPoints = membershipList.reduce((sum, m) => sum + (m.points || 0), 0);
+  const activeCount = membershipList.filter((m) => m.status === "active").length;
 
-  const handleMembershipClick = (businessName: string, points: number, tier: string) => {
-    toast.info(businessName, `You currently have ${points.toLocaleString()} points (${tier} Tier).`);
+  const handleMembershipClick = (membership: CustomerMembership) => {
+    setSelectedMembership(membership);
+    setShowMembershipDetails(true);
+  };
+
+  const handleScanClose = () => {
+    setShowScanner(false);
+    // Refetch memberships after scan
+    if (scanQRMutation.isSuccess) {
+      // Data will be refetched via the mutation's onSuccess callback
+    }
   };
 
   return (
@@ -133,13 +154,14 @@ export default function CustomerDashboard() {
             Welcome back, {userName.split(" ")[0]} 👋
           </h1>
           <p className="text-xs text-muted">
-            <span className="font-semibold text-brand">{membershipList.length}</span> active loyalty memberships
+            <span className="font-semibold text-brand">{activeCount}</span> active loyalty
+            memberships
           </p>
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
-          <div className="bg-surface-card rounded-md p-3.5 border border-border-subtle">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+          <div className="bg-surface-card rounded-md p-3.5 border border-border-subtle hover:border-brand/40 transition-all cursor-pointer">
             <div className="flex items-center gap-1.5 mb-1 text-xs text-muted">
               <Star className="w-3.5 h-3.5 text-brand" />
               <span>Total Points</span>
@@ -147,7 +169,7 @@ export default function CustomerDashboard() {
             <p className="text-xl font-bold text-brand">{totalPoints.toLocaleString()}</p>
           </div>
 
-          <div className="bg-surface-card rounded-md p-3.5 border border-border-subtle">
+          <div className="bg-surface-card rounded-md p-3.5 border border-border-subtle hover:border-brand/40 transition-all cursor-pointer">
             <div className="flex items-center gap-1.5 mb-1 text-xs text-muted">
               <BadgeCheck className="w-3.5 h-3.5 text-brand" />
               <span>Memberships</span>
@@ -155,36 +177,47 @@ export default function CustomerDashboard() {
             <p className="text-xl font-bold text-foreground">{membershipList.length}</p>
           </div>
 
-          <div className="col-span-2 sm:col-span-1 bg-surface-card rounded-md p-3.5 border border-border-subtle">
+          <div className="col-span-2 sm:col-span-1 bg-surface-card rounded-md p-3.5 border border-border-subtle hover:border-brand/40 transition-all cursor-pointer">
             <div className="flex items-center gap-1.5 mb-1 text-xs text-muted">
               <Gift className="w-3.5 h-3.5 text-brand" />
               <span>Rewards</span>
             </div>
-            <p className="text-xl font-bold text-foreground">{membershipList.length > 0 ? "1" : "0"}</p>
+            <p className="text-xl font-bold text-foreground">
+              {membershipList.filter((m) => m.points > 0).length}
+            </p>
           </div>
         </div>
 
         {/* Primary Scan Banner */}
         <div
-          className="rounded-md p-4 mb-6 bg-surface-card border border-brand/40 cursor-pointer hover:border-brand transition-all"
+          className="rounded-md p-4 mb-6 bg-gradient-to-r from-brand/10 to-brand-muted border border-brand/40 cursor-pointer hover:border-brand transition-all group"
           onClick={() => setShowScanner(true)}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-brand text-xs font-semibold mb-0.5">Quick Action</p>
-              <h2 className="text-foreground text-sm font-bold">Scan Merchant QR Code</h2>
-              <p className="text-muted text-[11px]">Tap to open camera scanner and submit visit request.</p>
+              <p className="text-brand text-xs font-semibold mb-0.5">✨ Quick Action</p>
+              <h2 className="text-foreground text-sm font-bold">
+                Scan Merchant QR Code
+              </h2>
+              <p className="text-muted text-[11px]">
+                Tap to open camera scanner and submit your visit request.
+              </p>
             </div>
-            <div className="w-10 h-10 rounded-md bg-brand flex items-center justify-center flex-shrink-0 ml-3">
-              <ScanLine className="w-5 h-5 text-brand-foreground" />
+            <div className="w-12 h-12 rounded-lg bg-brand flex items-center justify-center flex-shrink-0 ml-3 group-hover:scale-110 transition-transform">
+              <ScanLine className="w-6 h-6 text-brand-foreground" />
             </div>
           </div>
         </div>
 
-        {/* My Memberships */}
+        {/* Memberships Section */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-foreground">My Memberships</h2>
+            {membershipList.length > 0 && (
+              <span className="text-[10px] px-2 py-1 rounded-full bg-brand-muted text-brand font-bold border border-brand/20">
+                {membershipList.length}
+              </span>
+            )}
           </div>
 
           {membershipsLoading ? (
@@ -196,7 +229,9 @@ export default function CustomerDashboard() {
             <div className="p-6 text-center bg-surface-card rounded-md border border-border-subtle">
               <Store className="w-6 h-6 text-muted mx-auto mb-2 opacity-60" />
               <p className="text-xs font-semibold text-foreground mb-1">No memberships yet</p>
-              <p className="text-[11px] text-muted mb-3">Scan a business QR code to join your first program!</p>
+              <p className="text-[11px] text-muted mb-3">
+                Scan a business QR code to join your first program!
+              </p>
               <button
                 onClick={() => setShowScanner(true)}
                 className="px-3.5 py-1.5 rounded-md bg-brand text-brand-foreground font-bold text-xs hover:opacity-90 transition-all"
@@ -206,28 +241,46 @@ export default function CustomerDashboard() {
             </div>
           ) : (
             <div className="space-y-2">
-              {membershipList.map((m) => {
-                const bName = m.businessId?.name || "Business";
+              {membershipList.map((membership) => {
+                const bName = membership.businessId?.name || "Business";
                 const IconComponent = getBusinessIcon(bName);
+                const statusColor = {
+                  active: "bg-green-500/10 text-green-700 border-green-300",
+                  pending: "bg-yellow-500/10 text-yellow-700 border-yellow-300",
+                  rejected: "bg-red-500/10 text-red-700 border-red-300",
+                  blocked: "bg-gray-500/10 text-gray-700 border-gray-300",
+                };
+
                 return (
                   <div
-                    key={m._id}
-                    onClick={() => handleMembershipClick(bName, m.points, m.tier)}
+                    key={membership._id}
+                    onClick={() => handleMembershipClick(membership)}
                     className="flex items-center gap-3 bg-surface-card rounded-md p-3 border border-border-subtle hover:border-brand/40 transition-all cursor-pointer group"
                   >
-                    <div className="w-9 h-9 rounded-md bg-brand-muted border border-brand/30 flex items-center justify-center flex-shrink-0">
+                    <div className="w-9 h-9 rounded-md bg-brand-muted border border-brand/30 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                       <IconComponent className="w-4 h-4 text-brand" />
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <p className="font-semibold text-foreground text-xs truncate">{bName}</p>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-brand-muted text-brand border border-brand/20 flex-shrink-0">
-                          {m.tier || "Basic"}
+                        <p className="font-semibold text-foreground text-xs truncate">
+                          {bName}
+                        </p>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold border ${
+                            statusColor[
+                              membership.status as keyof typeof statusColor
+                            ] || statusColor.pending
+                          }`}
+                        >
+                          {membership.status}
                         </span>
                       </div>
                       <p className="text-[11px] text-muted">
-                        <span className="text-brand font-semibold">{m.points || 0} pts</span> • Status: {m.status}
+                        <span className="text-brand font-semibold">
+                          {membership.points || 0} pts
+                        </span>{" "}
+                        • {membership.tier || "Basic"} Tier
                       </p>
                     </div>
 
@@ -238,12 +291,31 @@ export default function CustomerDashboard() {
             </div>
           )}
         </div>
+
+        {/* Tips Section */}
+        <div className="mt-6 p-4 bg-brand-muted rounded-md border border-brand/20">
+          <div className="flex gap-2">
+            <Zap className="w-4 h-4 text-brand flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-1">Pro Tip</p>
+              <p className="text-[11px] text-muted">
+                Earn more points by visiting your favorite businesses regularly. Unlock
+                higher tiers for exclusive rewards!
+              </p>
+            </div>
+          </div>
+        </div>
       </main>
 
       {/* QR Scanner Modal */}
-      {showScanner && (
-        <QRScannerModal onClose={() => setShowScanner(false)} />
-      )}
+      {showScanner && <QRScannerModal onClose={handleScanClose} />}
+
+      {/* Membership Details Modal */}
+      <MembershipDetailsModal
+        isOpen={showMembershipDetails}
+        onClose={() => setShowMembershipDetails(false)}
+        membership={selectedMembership}
+      />
     </div>
   );
 }
