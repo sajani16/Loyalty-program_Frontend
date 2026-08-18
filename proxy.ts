@@ -14,7 +14,7 @@ function clearSessionCookies(response: NextResponse) {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
@@ -59,10 +59,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Safely extract userType from JWT token
+  const userType = (token?.user as { userType?: string } | undefined)?.userType;
+
   // ─── Role-based cross-access guard ───────────────────────────────
   if (token && isProtected) {
-    const userType = (token.user as { userType?: string })?.userType;
-
     // Merchant trying to access customer routes
     if (isProtectedCustomer && userType === "business") {
       return NextResponse.redirect(
@@ -87,7 +88,6 @@ export async function middleware(request: NextRequest) {
     }
     if (!isPasswordRecovery) {
       // Redirect to appropriate dashboard based on role
-      const userType = (token.user as { userType?: string })?.userType;
       const dashboardUrl =
         userType === "business" ? "/merchant/dashboard" : "/customer/dashboard";
       return NextResponse.redirect(new URL(dashboardUrl, request.url));
@@ -96,6 +96,9 @@ export async function middleware(request: NextRequest) {
 
   return NextResponse.next();
 }
+
+// Export default function for Turbopack export matching
+export default proxy;
 
 export const config = {
   matcher: [
