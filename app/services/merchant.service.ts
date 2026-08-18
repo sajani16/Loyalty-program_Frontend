@@ -20,6 +20,11 @@ export interface BusinessCustomerRecord {
   tier: string;
   status: string;
   joinedAt: string;
+  stampCards?: Array<{
+    productId: string;
+    progress: number;
+    completedCards: number;
+  }>;
 }
 
 export interface LoyaltyRequestItem {
@@ -32,9 +37,28 @@ export interface LoyaltyRequestItem {
       email: string;
     };
   };
+  products: Array<{
+    productId: string;
+    productName: string;
+    unitPrice: number;
+    quantity: number;
+  }>;
   status: string;
+  amountSpent?: number;
+  pointsAwarded?: number;
+  stampsAwarded?: number;
   createdAt: string;
   expiresAt: string;
+}
+
+export interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  type: "points" | "stamps";
+  pointsValue?: number;
+  stampsValue?: number;
+  description?: string;
 }
 
 export const merchantService = {
@@ -43,8 +67,28 @@ export const merchantService = {
     return res.data;
   },
 
+  async updateMyBusiness(data: Partial<BusinessProfile>): Promise<ApiResponse<BusinessProfile>> {
+    const res = await api.put("/businesses/me", data);
+    return res.data;
+  },
+
   async getBusinessCustomers(): Promise<ApiResponse<BusinessCustomerRecord[]>> {
     const res = await api.get("/memberships/business/customers");
+    return res.data;
+  },
+
+  async getBusinessCustomerDetail(id: string): Promise<ApiResponse<BusinessCustomerRecord>> {
+    const res = await api.get(`/memberships/business/customers/${id}`);
+    return res.data;
+  },
+
+  async approveMembership(id: string): Promise<ApiResponse> {
+    const res = await api.patch(`/memberships/business/customers/${id}/approve`);
+    return res.data;
+  },
+
+  async rejectMembership(id: string): Promise<ApiResponse> {
+    const res = await api.patch(`/memberships/business/customers/${id}/reject`);
     return res.data;
   },
 
@@ -53,13 +97,58 @@ export const merchantService = {
     return res.data;
   },
 
-  async completeRequest(id: string): Promise<ApiResponse> {
-    const res = await api.patch(`/loyalty-requests/${id}/complete`);
+  async getLoyaltyRequestDetail(id: string): Promise<ApiResponse<LoyaltyRequestItem>> {
+    const res = await api.get(`/loyalty-requests/${id}`);
+    return res.data;
+  },
+
+  async completeRequest(
+    id: string,
+    payload: {
+      pointsAwarded?: number;
+      stampsAwarded?: number;
+      amountSpent?: number;
+    }
+  ): Promise<ApiResponse> {
+    const res = await api.patch(`/loyalty-requests/${id}/complete`, payload);
+    return res.data;
+  },
+
+  async addProductsToRequest(
+    id: string,
+    products: Array<{
+      productId: string;
+      productName: string;
+      unitPrice: number;
+      quantity: number;
+    }>
+  ): Promise<ApiResponse> {
+    const res = await api.patch(`/loyalty-requests/${id}/add-products`, { products });
     return res.data;
   },
 
   async rejectRequest(id: string): Promise<ApiResponse> {
     const res = await api.patch(`/loyalty-requests/${id}/reject`);
+    return res.data;
+  },
+
+  async getBusinessProducts(): Promise<ApiResponse<Product[]>> {
+    const res = await api.get("/products");
+    return res.data;
+  },
+
+  async createProduct(data: Omit<Product, "_id">): Promise<ApiResponse<Product>> {
+    const res = await api.post("/products", data);
+    return res.data;
+  },
+
+  async updateProduct(id: string, data: Partial<Product>): Promise<ApiResponse<Product>> {
+    const res = await api.put(`/products/${id}`, data);
+    return res.data;
+  },
+
+  async deleteProduct(id: string): Promise<ApiResponse> {
+    const res = await api.delete(`/products/${id}`);
     return res.data;
   },
 };

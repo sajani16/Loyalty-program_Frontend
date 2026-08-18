@@ -12,6 +12,7 @@ export const useScanQRMutation = () => {
     mutationFn: (businessId: string) => loyaltyService.scanQR(businessId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["customerMemberships"] });
+      void queryClient.invalidateQueries({ queryKey: ["businessCards"] });
     },
   });
 };
@@ -38,6 +39,75 @@ export const useCustomerMemberships = () => {
     queryFn: async () => {
       const res = await customerService.getMemberships();
       return res.data;
+    },
+  });
+};
+
+/**
+ * Hook to fetch customer's business cards (simplified view)
+ */
+export const useBusinessCards = () => {
+  return useQuery({
+    queryKey: ["businessCards"],
+    queryFn: async () => {
+      const res = await customerService.getBusinessCards();
+      return res.data;
+    },
+  });
+};
+
+/**
+ * Hook to fetch membership detail
+ */
+export const useMembershipDetail = (membershipId: string) => {
+  return useQuery({
+    queryKey: ["membership", membershipId],
+    queryFn: async () => {
+      const res = await customerService.getMembershipDetail(membershipId);
+      return res.data;
+    },
+    enabled: !!membershipId,
+  });
+};
+
+/**
+ * Hook to fetch loyalty stats for a membership
+ */
+export const useLoyaltyStats = (businessCustomerId: string) => {
+  return useQuery({
+    queryKey: ["loyaltyStats", businessCustomerId],
+    queryFn: async () => {
+      const res = await loyaltyService.getLoyaltyStats(businessCustomerId);
+      return res.data;
+    },
+    enabled: !!businessCustomerId,
+  });
+};
+
+/**
+ * Hook to fetch customer's loyalty requests for a specific business
+ */
+export const useCustomerLoyaltyRequests = (businessCustomerId: string) => {
+  return useQuery({
+    queryKey: ["customerLoyaltyRequests", businessCustomerId],
+    queryFn: async () => {
+      const res = await loyaltyService.getCustomerRequests(businessCustomerId);
+      return res.data;
+    },
+    enabled: !!businessCustomerId,
+  });
+};
+
+/**
+ * Hook to join a business loyalty program
+ */
+export const useJoinBusinessMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (businessId: string) => customerService.joinBusiness(businessId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["customerMemberships"] });
+      void queryClient.invalidateQueries({ queryKey: ["businessCards"] });
     },
   });
 };
