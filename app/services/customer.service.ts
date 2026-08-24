@@ -7,6 +7,7 @@ export interface CustomerProfile {
   email: string;
   phone?: string;
   status: string;
+  profileImage?: string;
 }
 
 export interface CustomerMembership {
@@ -52,6 +53,34 @@ export const customerService = {
     return res.data;
   },
 
+  async updateMyCustomer(data: {
+    name?: string;
+    phone?: string;
+  }): Promise<ApiResponse<CustomerProfile>> {
+    const res = await api.put("/customers/me", data);
+    return res.data;
+  },
+
+  async updateProfileImage(file: File): Promise<ApiResponse<CustomerProfile>> {
+    const formData = new FormData();
+    formData.append("profileImage", file);
+    const res = await api.put("/customers/me/profile-image", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+
+  async changeCustomerPassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<ApiResponse> {
+    const res = await api.post("/customers/me/change-password", {
+      currentPassword,
+      newPassword,
+    });
+    return res.data;
+  },
+
   async getMemberships(): Promise<ApiResponse<CustomerMembership[]>> {
     const res = await api.get("/memberships");
     return res.data;
@@ -74,6 +103,20 @@ export const customerService = {
 
   async getDashboardData(businessCustomerId: string): Promise<ApiResponse<LoyaltyStats>> {
     const res = await api.get(`/memberships/${businessCustomerId}/dashboard`);
+    return res.data;
+  },
+
+  async getActivityHistory(
+    page: number = 1,
+    limit: number = 10,
+    status: string = "all",
+  ): Promise<ApiResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(status !== "all" && { status }),
+    });
+    const res = await api.get(`/customers/me/activity-history?${params}`);
     return res.data;
   },
 };

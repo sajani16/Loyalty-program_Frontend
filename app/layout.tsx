@@ -43,7 +43,7 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "SmartQR — One QR Platform for Every Business Need",
+  title: "LoyaltyHub — One QR Platform for Every Business Need",
   description:
     "Create digital identities, accept restaurant orders, generate QR codes, and build professional email signatures — all from one smart platform.",
 };

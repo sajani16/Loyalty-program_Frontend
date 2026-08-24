@@ -2,6 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { loyaltyService } from "@/services/loyalty.service";
 import { customerService } from "@/services/customer.service";
 
+interface ActivityHistoryResponse {
+  success: boolean;
+  data: any[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+  message: string;
+}
+
 /**
  * Hook to scan a merchant's QR code and submit a loyalty join request.
  * @param businessId - plain businessId string from scanned QR
@@ -26,6 +38,33 @@ export const useCustomerProfile = () => {
     queryFn: async () => {
       const res = await customerService.getMyCustomer();
       return res.data;
+    },
+  });
+};
+
+/**
+ * Hook to update customer profile
+ */
+export const useUpdateCustomerProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name?: string; phone?: string }) =>
+      customerService.updateMyCustomer(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+    },
+  });
+};
+
+/**
+ * Hook to update customer profile image
+ */
+export const useUpdateProfileImageMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => customerService.updateProfileImage(file),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
     },
   });
 };
@@ -109,5 +148,41 @@ export const useJoinBusinessMutation = () => {
       void queryClient.invalidateQueries({ queryKey: ["customerMemberships"] });
       void queryClient.invalidateQueries({ queryKey: ["businessCards"] });
     },
+  });
+};
+
+/**
+ * Hook to change customer password
+ */
+export const useChangeCustomerPasswordMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      currentPassword,
+      newPassword,
+    }: {
+      currentPassword: string;
+      newPassword: string;
+    }) => customerService.changeCustomerPassword(currentPassword, newPassword),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["customerProfile"] });
+    },
+  });
+};
+
+/**
+ * Hook to fetch customer's activity history (all loyalty requests)
+ * Cached with queryKey ["activityHistory"] for state management
+ */
+export const useActivityHistory = (page: number = 1, limit: number = 10, status: string = "all") => {
+  return useQuery({
+    queryKey: ["activityHistory", page, limit, status],
+    queryFn: async () => {
+      const response = await customerService.getActivityHistory(page, limit, status);
+      // Response structure: { success, data: [...], meta: {...}, message }
+      console.log("[useActivityHistory] Raw response:", response);
+      return response;
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 };

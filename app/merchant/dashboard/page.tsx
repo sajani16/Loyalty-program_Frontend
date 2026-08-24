@@ -1,24 +1,59 @@
-import { Suspense } from "react";
-import MerchantDashboard from "./MerchantDashboard";
+"use client";
 
-export const metadata = {
-  title: "Merchant Dashboard — LoyaltyHub",
-  description: "Manage your loyalty program, customers, products, and requests.",
-};
+import { useSession, signOut } from "next-auth/react";
+import { toast } from "@/hooks/use-toast";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { MerchantOverview } from "./components/MerchantOverview";
+import {
+  useBusinessProfile,
+  useBusinessCustomers,
+  usePendingRequests,
+} from "../api";
 
 export default function MerchantDashboardPage() {
+  const { data: session } = useSession();
+  const { data: businessProfile } = useBusinessProfile();
+  const { data: customersData } = useBusinessCustomers();
+  const { data: pendingData } = usePendingRequests();
+
+  const businessName = businessProfile?.name || session?.user?.name || "Merchant";
+  const customersList = customersData || [];
+  const requestsList = pendingData || [];
+  const pendingCount = requestsList.filter((r) => r.status === "pending").length;
+
+  const totalCustomersCount = customersList.length;
+  const totalPointsAwarded = customersList.reduce((sum, c) => sum + (c.points || 0), 0);
+
+  const handleSignOut = () => {
+    toast.success("Signed out", "You have been logged out safely.");
+    void signOut({ callbackUrl: "/" });
+  };
+
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl gradient-brand mx-auto mb-3 flex items-center justify-center animate-pulse">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeWidth="2" d="M3 9V7a2 2 0 0 1 2-2h2M3 15v2a2 2 0 0 0 2 2h2m10-14h2a2 2 0 0 1 2 2v2m-4 10h2a2 2 0 0 0 2-2v-2"/></svg>
-          </div>
-          <p className="text-gray-500 text-sm">Loading your dashboard…</p>
+    <DashboardLayout
+      userType="merchant"
+      onSignOut={handleSignOut}
+      businessName={businessName}
+      headerTitle="Merchant Portal"
+      pendingRequestsCount={pendingCount}
+    >
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-foreground mb-1">
+            Welcome back, {businessName.split(" ")[0]} 👋
+          </h1>
+          <p className="text-xs text-muted">
+            <span className="font-semibold text-brand">{pendingCount}</span> pending
+            loyalty requests
+          </p>
         </div>
+
+        <MerchantOverview
+          totalCustomers={totalCustomersCount}
+          totalPointsAwarded={totalPointsAwarded}
+          pendingRequests={pendingCount}
+        />
       </div>
-    }>
-      <MerchantDashboard />
-    </Suspense>
+    </DashboardLayout>
   );
 }

@@ -29,6 +29,38 @@ export const useUpdateBusinessProfile = () => {
 };
 
 /**
+ * Hook to update business logo
+ */
+export const useUpdateBusinessLogoMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => merchantService.updateBusinessLogo(file),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["businessProfile"] });
+    },
+  });
+};
+
+/**
+ * Hook to change business password
+ */
+export const useChangeBusinessPasswordMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      currentPassword,
+      newPassword,
+    }: {
+      currentPassword: string;
+      newPassword: string;
+    }) => merchantService.changeBusinessPassword(currentPassword, newPassword),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["businessProfile"] });
+    },
+  });
+};
+
+/**
  * Hook to fetch business customer memberships
  */
 export const useBusinessCustomers = () => {

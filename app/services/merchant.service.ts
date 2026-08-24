@@ -7,6 +7,7 @@ export interface BusinessProfile {
   email: string;
   phone?: string;
   status: string;
+  businessLogo?: string;
 }
 
 export interface BusinessCustomerRecord {
@@ -67,8 +68,30 @@ export const merchantService = {
     return res.data;
   },
 
-  async updateMyBusiness(data: Partial<BusinessProfile>): Promise<ApiResponse<BusinessProfile>> {
+  async updateMyBusiness(
+    data: Partial<BusinessProfile>,
+  ): Promise<ApiResponse<BusinessProfile>> {
     const res = await api.put("/businesses/me", data);
+    return res.data;
+  },
+
+  async updateBusinessLogo(file: File): Promise<ApiResponse<BusinessProfile>> {
+    const formData = new FormData();
+    formData.append("businessLogo", file);
+    const res = await api.put("/businesses/me/logo", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+
+  async changeBusinessPassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<ApiResponse> {
+    const res = await api.post("/businesses/me/change-password", {
+      currentPassword,
+      newPassword,
+    });
     return res.data;
   },
 
@@ -77,13 +100,17 @@ export const merchantService = {
     return res.data;
   },
 
-  async getBusinessCustomerDetail(id: string): Promise<ApiResponse<BusinessCustomerRecord>> {
+  async getBusinessCustomerDetail(
+    id: string,
+  ): Promise<ApiResponse<BusinessCustomerRecord>> {
     const res = await api.get(`/memberships/business/customers/${id}`);
     return res.data;
   },
 
   async approveMembership(id: string): Promise<ApiResponse> {
-    const res = await api.patch(`/memberships/business/customers/${id}/approve`);
+    const res = await api.patch(
+      `/memberships/business/customers/${id}/approve`,
+    );
     return res.data;
   },
 
@@ -97,7 +124,9 @@ export const merchantService = {
     return res.data;
   },
 
-  async getLoyaltyRequestDetail(id: string): Promise<ApiResponse<LoyaltyRequestItem>> {
+  async getLoyaltyRequestDetail(
+    id: string,
+  ): Promise<ApiResponse<LoyaltyRequestItem>> {
     const res = await api.get(`/loyalty-requests/${id}`);
     return res.data;
   },
@@ -105,10 +134,13 @@ export const merchantService = {
   async completeRequest(
     id: string,
     payload: {
-      pointsAwarded?: number;
-      stampsAwarded?: number;
+      type: "point" | "stamp";
       amountSpent?: number;
-    }
+      products?: Array<{
+        productId: string;
+        quantity: number;
+      }>;
+    },
   ): Promise<ApiResponse> {
     const res = await api.patch(`/loyalty-requests/${id}/complete`, payload);
     return res.data;
@@ -121,9 +153,11 @@ export const merchantService = {
       productName: string;
       unitPrice: number;
       quantity: number;
-    }>
+    }>,
   ): Promise<ApiResponse> {
-    const res = await api.patch(`/loyalty-requests/${id}/add-products`, { products });
+    const res = await api.patch(`/loyalty-requests/${id}/add-products`, {
+      products,
+    });
     return res.data;
   },
 
@@ -137,12 +171,17 @@ export const merchantService = {
     return res.data;
   },
 
-  async createProduct(data: Omit<Product, "_id">): Promise<ApiResponse<Product>> {
+  async createProduct(
+    data: Omit<Product, "_id">,
+  ): Promise<ApiResponse<Product>> {
     const res = await api.post("/products", data);
     return res.data;
   },
 
-  async updateProduct(id: string, data: Partial<Product>): Promise<ApiResponse<Product>> {
+  async updateProduct(
+    id: string,
+    data: Partial<Product>,
+  ): Promise<ApiResponse<Product>> {
     const res = await api.put(`/products/${id}`, data);
     return res.data;
   },
