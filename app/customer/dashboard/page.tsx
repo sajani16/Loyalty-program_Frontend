@@ -1,35 +1,42 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Star, BadgeCheck, Gift, ScanLine } from "lucide-react";
+import { Star, BadgeCheck, Gift } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import QRScannerModal from "./QRScannerModal";
-import { MembershipDetailsModal } from "@/components/customer/MembershipDetailsModal";
+import { DashboardLayout } from "../../components/layout/DashboardLayout";
 import { useCustomerProfile, useCustomerMemberships } from "../api";
 import { CustomerMembership } from "@/services/customer.service";
-import { AppDataTable, ColumnDefinition, StatusBadge, DualText } from "@/components/ui/app-data-table";
+import {
+  AppDataTable,
+  ColumnDefinition,
+  StatusBadge,
+  DualText,
+} from "@/components/ui/app-data-table";
 
 export default function CustomerDashboardPage() {
+  const router = useRouter();
   const { data: session } = useSession();
-  const [showScanner, setShowScanner] = useState(false);
-  const [selectedMembership, setSelectedMembership] = useState<CustomerMembership | null>(null);
-  const [showMembershipDetails, setShowMembershipDetails] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const { data: customerProfile } = useCustomerProfile();
-  const { data: memberships, isLoading: membershipsLoading } = useCustomerMemberships();
+  const { data: memberships, isLoading: membershipsLoading } =
+    useCustomerMemberships();
 
   const userName = customerProfile?.name || session?.user?.name || "Customer";
   const membershipList = memberships || [];
-  const totalPoints = membershipList.reduce((sum, m) => sum + (m.points || 0), 0);
-  const activeCount = membershipList.filter((m) => m.status === "active").length;
+  const totalPoints = membershipList.reduce(
+    (sum, m) => sum + (m.points || 0),
+    0,
+  );
+  const activeCount = membershipList.filter(
+    (m) => m.status === "active",
+  ).length;
 
   const handleMembershipClick = (membership: CustomerMembership) => {
-    setSelectedMembership(membership);
-    setShowMembershipDetails(true);
+    router.push(`/customer/membership/${membership._id}`);
   };
 
   const handleSignOut = () => {
@@ -40,7 +47,7 @@ export default function CustomerDashboardPage() {
   const filteredMemberships = membershipList.filter(
     (m) =>
       m.businessId?.name?.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      (statusFilter === "all" || m.status === statusFilter)
+      (statusFilter === "all" || m.status === statusFilter),
   );
 
   const membershipColumns: ColumnDefinition<CustomerMembership>[] = [
@@ -101,24 +108,15 @@ export default function CustomerDashboardPage() {
       onSignOut={handleSignOut}
       userName={userName}
       headerTitle="Customer Portal"
-      headerActions={
-        <button
-          onClick={() => setShowScanner(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-brand text-brand-foreground text-xs font-bold hover:opacity-90 transition-all shadow-sm"
-        >
-          <ScanLine className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Scan QR</span>
-        </button>
-      }
     >
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-foreground mb-1">
-            Welcome back, {userName.split(" ")[0]} 👋
+            Welcome back, {userName.split(" ")[0]}
           </h1>
           <p className="text-xs text-muted">
-            <span className="font-semibold text-brand">{activeCount}</span> active
-            loyalty memberships
+            <span className="font-semibold text-brand">{activeCount}</span>{" "}
+            active loyalty memberships
           </p>
         </div>
 
@@ -174,22 +172,6 @@ export default function CustomerDashboardPage() {
           emptyMessage="You have not joined any loyalty programs yet. Scan a merchant QR code to get started!"
         />
       </div>
-
-      {/* Modals */}
-      {showScanner && (
-        <QRScannerModal onClose={() => setShowScanner(false)} />
-      )}
-
-      {selectedMembership && (
-        <MembershipDetailsModal
-          isOpen={showMembershipDetails}
-          onClose={() => {
-            setShowMembershipDetails(false);
-            setSelectedMembership(null);
-          }}
-          membership={selectedMembership}
-        />
-      )}
     </DashboardLayout>
   );
 }

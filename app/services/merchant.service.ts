@@ -37,6 +37,8 @@ export interface LoyaltyRequestItem {
       name: string;
       email: string;
     };
+    tier?: string;
+    points?: number;
   };
   products: Array<{
     productId: string;

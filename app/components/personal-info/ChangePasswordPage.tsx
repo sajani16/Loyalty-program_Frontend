@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,10 @@ interface ChangePasswordPageProps {
   userType: "customer" | "merchant";
 }
 
-export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps) {
+export function ChangePasswordPage({
+  onBack,
+  userType,
+}: ChangePasswordPageProps) {
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -31,7 +34,8 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
 
   const changeCustomerPassword = useChangeCustomerPasswordMutation();
   const changeBusinessPassword = useChangeBusinessPasswordMutation();
-  const mutation = userType === "customer" ? changeCustomerPassword : changeBusinessPassword;
+  const mutation =
+    userType === "customer" ? changeCustomerPassword : changeBusinessPassword;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -60,8 +64,12 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
       newErrors.confirmPassword = "Passwords do not match";
     }
 
-    if (formData.currentPassword && formData.currentPassword === formData.newPassword) {
-      newErrors.newPassword = "New password must be different from current password";
+    if (
+      formData.currentPassword &&
+      formData.currentPassword === formData.newPassword
+    ) {
+      newErrors.newPassword =
+        "New password must be different from current password";
     }
 
     setErrors(newErrors);
@@ -127,7 +135,10 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
           Back
         </button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>
+          <h1
+            className="text-2xl font-semibold tracking-tight"
+            style={{ color: "var(--foreground)" }}
+          >
             Change Password
           </h1>
           <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
@@ -140,7 +151,11 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
       <form onSubmit={handleChangePassword} className="space-y-5">
         {/* Current Password */}
         <div className="space-y-1.5">
-          <Label htmlFor="currentPassword" className="text-xs font-medium" style={{ color: "var(--foreground)" }}>
+          <Label
+            htmlFor="currentPassword"
+            className="text-xs font-medium"
+            style={{ color: "var(--foreground)" }}
+          >
             Current Password
           </Label>
           <div className="relative">
@@ -155,7 +170,9 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
               className="pr-10 border transition-colors"
               style={{
                 backgroundColor: "var(--surface)",
-                borderColor: errors.currentPassword ? "#ef4444" : "var(--border-subtle)",
+                borderColor: errors.currentPassword
+                  ? "#ef4444"
+                  : "var(--border-subtle)",
                 color: "var(--foreground)",
               }}
             />
@@ -165,7 +182,11 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
               className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-80"
               style={{ color: "var(--muted)" }}
             >
-              {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showPasswords.current ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </button>
           </div>
           {errors.currentPassword && (
@@ -175,7 +196,11 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
 
         {/* New Password */}
         <div className="space-y-1.5">
-          <Label htmlFor="newPassword" className="text-xs font-medium" style={{ color: "var(--foreground)" }}>
+          <Label
+            htmlFor="newPassword"
+            className="text-xs font-medium"
+            style={{ color: "var(--foreground)" }}
+          >
             New Password
           </Label>
           <div className="relative">
@@ -190,7 +215,9 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
               className="pr-10 border transition-colors"
               style={{
                 backgroundColor: "var(--surface)",
-                borderColor: errors.newPassword ? "#ef4444" : "var(--border-subtle)",
+                borderColor: errors.newPassword
+                  ? "#ef4444"
+                  : "var(--border-subtle)",
                 color: "var(--foreground)",
               }}
             />
@@ -200,7 +227,11 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
               className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-80"
               style={{ color: "var(--muted)" }}
             >
-              {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showPasswords.new ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </button>
           </div>
           {errors.newPassword && (
@@ -210,7 +241,11 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
 
         {/* Confirm Password */}
         <div className="space-y-1.5">
-          <Label htmlFor="confirmPassword" className="text-xs font-medium" style={{ color: "var(--foreground)" }}>
+          <Label
+            htmlFor="confirmPassword"
+            className="text-xs font-medium"
+            style={{ color: "var(--foreground)" }}
+          >
             Confirm New Password
           </Label>
           <div className="relative">
@@ -225,7 +260,9 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
               className="pr-10 border transition-colors"
               style={{
                 backgroundColor: "var(--surface)",
-                borderColor: errors.confirmPassword ? "#ef4444" : "var(--border-subtle)",
+                borderColor: errors.confirmPassword
+                  ? "#ef4444"
+                  : "var(--border-subtle)",
                 color: "var(--foreground)",
               }}
             />
@@ -235,7 +272,11 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
               className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-80"
               style={{ color: "var(--muted)" }}
             >
-              {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showPasswords.confirm ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </button>
           </div>
           {errors.confirmPassword && (
@@ -254,14 +295,7 @@ export function ChangePasswordPage({ onBack, userType }: ChangePasswordPageProps
               color: "var(--brand-foreground)",
             }}
           >
-            {mutation.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Updating...
-              </>
-            ) : (
-              "Update Password"
-            )}
+            {mutation.isPending ? "Updating Password..." : "Update Password"}
           </Button>
         </div>
       </form>

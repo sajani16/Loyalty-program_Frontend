@@ -17,10 +17,25 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface MerchantNavProps {
   businessName: string;
-  currentPage?: "dashboard" | "customers" | "products" | "requests" | "settings";
+  currentPage?:
+    | "dashboard"
+    | "customers"
+    | "products"
+    | "requests"
+    | "settings";
   onPageChange?: (page: string) => void;
 }
 
@@ -46,12 +61,16 @@ function Sidebar({
   currentPage?: string;
   onPageChange?: (page: string) => void;
 }) {
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
   const handleNavClick = (id: string) => {
     onPageChange?.(id);
     onClose();
   };
 
-  const handleSignOut = () => {
+  const handleConfirmSignOut = () => {
+    setIsConfirmOpen(false);
+    onClose();
     toast.success("Logged out", "Merchant session ended.");
     void signOut({ callbackUrl: "/" });
   };
@@ -141,7 +160,7 @@ function Sidebar({
         {/* Sign Out */}
         <div className="px-2.5 py-3 border-t border-border-subtle">
           <button
-            onClick={handleSignOut}
+            onClick={() => setIsConfirmOpen(true)}
             className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-muted hover:text-red-500 hover:bg-surface-card transition-all text-xs font-medium"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -149,6 +168,32 @@ function Sidebar({
           </button>
         </div>
       </aside>
+
+      {/* ── Sign Out Confirmation Modal ── */}
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent className="max-w-md rounded-xl border border-border-subtle bg-surface-card text-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base font-bold text-foreground">
+              Sign Out Confirmation
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted">
+              Are you sure you want to sign out? You will need to log back in to
+              access the merchant console.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4 gap-2">
+            <AlertDialogCancel className="rounded-md border-border-subtle text-xs font-semibold hover:bg-border-subtle/40">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmSignOut}
+              className="rounded-md bg-red-600 text-xs font-semibold text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+            >
+              Sign Out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

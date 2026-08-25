@@ -17,15 +17,15 @@ export default function CustomerChangePasswordPage() {
   };
 
   return (
-    <DashboardLayout 
-      userType="customer" 
-      onSignOut={handleSignOut} 
-      userName={userName} 
+    <DashboardLayout
+      userType="customer"
+      onSignOut={handleSignOut}
+      userName={userName}
       headerTitle="Change Password"
     >
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-2xl mx-auto">
-        <ChangePasswordPage 
-          onBack={() => window.history.back()} 
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-2xl ">
+        <ChangePasswordPage
+          onBack={() => window.history.back()}
           userType="customer"
         />
       </div>

@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { History, Loader2 } from "lucide-react";
-import { AppDataTable, ColumnDefinition, StatusBadge } from "@/components/ui/app-data-table";
+import {
+  AppDataTable,
+  ColumnDefinition,
+  StatusBadge,
+} from "@/components/ui/app-data-table";
 import { useActivityHistory } from "../api";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSession, signOut } from "next-auth/react";
@@ -39,16 +42,22 @@ interface PaginatedResponse<T> {
 }
 
 export default function ActivityHistoryPage() {
-  const router = useRouter();
   const { data: session } = useSession();
   const { data: customerProfile } = useCustomerProfile();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: rawData, isLoading, error } = useActivityHistory(page, 10, statusFilter);
+  const {
+    data: rawData,
+    isLoading,
+    error,
+  } = useActivityHistory(page, 10, statusFilter);
 
   // Cast raw response to PaginatedResponse for safety
-  const apiResponse = rawData as PaginatedResponse<LoyaltyRequest> | LoyaltyRequest[] | undefined;
+  const apiResponse = rawData as
+    | PaginatedResponse<LoyaltyRequest>
+    | LoyaltyRequest[]
+    | undefined;
 
   const activities: LoyaltyRequest[] = Array.isArray(apiResponse)
     ? apiResponse
@@ -72,13 +81,17 @@ export default function ActivityHistoryPage() {
       cell: (activity) => (
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded bg-brand/10 text-brand font-bold text-xs flex items-center justify-center border border-brand/20">
-            {activity.businessCustomerId?.businessId?.name?.charAt(0).toUpperCase() || "?"}
+            {activity.businessCustomerId?.businessId?.name
+              ?.charAt(0)
+              .toUpperCase() || "?"}
           </div>
           <div>
             <p className="text-sm font-semibold text-foreground">
               {activity.businessCustomerId?.businessId?.name || "Unknown"}
             </p>
-            <p className="text-xs text-muted">Tier: {activity.businessCustomerId?.tier || "Basic"}</p>
+            <p className="text-xs text-muted">
+              Tier: {activity.businessCustomerId?.tier || "Basic"}
+            </p>
           </div>
         </div>
       ),
@@ -102,7 +115,8 @@ export default function ActivityHistoryPage() {
           ) : null}
           {activity.stampsAwarded ? (
             <span className="font-bold text-orange-500 text-sm">
-              🎫 {activity.stampsAwarded} stamp{activity.stampsAwarded !== 1 ? "s" : ""}
+              🎫 {activity.stampsAwarded} stamp
+              {activity.stampsAwarded !== 1 ? "s" : ""}
             </span>
           ) : null}
           {!activity.pointsAwarded && !activity.stampsAwarded ? (
@@ -120,8 +134,12 @@ export default function ActivityHistoryPage() {
       header: "Date",
       cell: (activity) => (
         <div className="text-sm">
-          <p className="text-foreground">{new Date(activity.createdAt).toLocaleDateString()}</p>
-          <p className="text-xs text-muted">{new Date(activity.createdAt).toLocaleTimeString()}</p>
+          <p className="text-foreground">
+            {new Date(activity.createdAt).toLocaleDateString()}
+          </p>
+          <p className="text-xs text-muted">
+            {new Date(activity.createdAt).toLocaleTimeString()}
+          </p>
         </div>
       ),
     },
@@ -131,8 +149,6 @@ export default function ActivityHistoryPage() {
     return (
       <DashboardLayout
         userType="customer"
-        activePage="history"
-        onPageChange={() => {}}
         onSignOut={handleSignOut}
         userName={userName}
         headerTitle="Activity History"
@@ -147,22 +163,26 @@ export default function ActivityHistoryPage() {
   return (
     <DashboardLayout
       userType="customer"
-      activePage="history"
-      onPageChange={() => {}}
       onSignOut={handleSignOut}
       userName={userName}
       headerTitle="Activity History"
     >
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Activity History</h1>
-          <p className="text-sm text-muted">View all your loyalty requests and spending</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            Activity History
+          </h1>
+          <p className="text-sm text-muted">
+            View all your loyalty requests and spending
+          </p>
         </div>
 
         {activities.length === 0 && !isLoading ? (
           <div className="text-center py-20">
             <History className="w-12 h-12 text-muted mx-auto mb-4 opacity-20" />
-            <h2 className="text-lg font-bold text-foreground mb-2">No Activity Yet</h2>
+            <h2 className="text-lg font-bold text-foreground mb-2">
+              No Activity Yet
+            </h2>
             <p className="text-sm text-muted">
               Scan a merchant QR code to start making loyalty requests
             </p>

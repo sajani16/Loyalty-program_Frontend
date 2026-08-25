@@ -22,7 +22,17 @@ export interface CustomerMembership {
   points: number;
   tier: "basic" | "silver" | "gold" | "platinum";
   stampCards?: Array<{
-    productId: string;
+    productId:
+      | string
+      | {
+          _id: string;
+          name: string;
+          price?: number;
+          stampEligible?: boolean;
+          stampTarget?: number;
+          rewardQuantity?: number;
+          isActive?: boolean;
+        };
     progress: number;
     completedCards: number;
   }>;
@@ -91,7 +101,9 @@ export const customerService = {
     return res.data;
   },
 
-  async getMembershipDetail(membershipId: string): Promise<ApiResponse<CustomerMembership>> {
+  async getMembershipDetail(
+    membershipId: string,
+  ): Promise<ApiResponse<CustomerMembership>> {
     const res = await api.get(`/memberships/${membershipId}`);
     return res.data;
   },
@@ -101,7 +113,9 @@ export const customerService = {
     return res.data;
   },
 
-  async getDashboardData(businessCustomerId: string): Promise<ApiResponse<LoyaltyStats>> {
+  async getDashboardData(
+    businessCustomerId: string,
+  ): Promise<ApiResponse<LoyaltyStats>> {
     const res = await api.get(`/memberships/${businessCustomerId}/dashboard`);
     return res.data;
   },

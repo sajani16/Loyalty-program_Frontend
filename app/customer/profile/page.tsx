@@ -17,17 +17,14 @@ export default function CustomerProfilePage() {
   };
 
   return (
-    <DashboardLayout 
-      userType="customer" 
-      onSignOut={handleSignOut} 
-      userName={userName} 
+    <DashboardLayout
+      userType="customer"
+      onSignOut={handleSignOut}
+      userName={userName}
       headerTitle="Profile"
     >
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-2xl mx-auto">
-        <ProfilePage 
-          onBack={() => window.history.back()} 
-          userType="customer"
-        />
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-2xl">
+        <ProfilePage onBack={() => window.history.back()} userType="customer" />
       </div>
     </DashboardLayout>
   );

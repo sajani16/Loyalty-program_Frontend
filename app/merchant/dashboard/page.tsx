@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
+import { Users, TrendingUp, ClipboardList } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { MerchantOverview } from "./components/MerchantOverview";
@@ -17,12 +18,31 @@ export default function MerchantDashboardPage() {
   const { data: pendingData } = usePendingRequests();
 
   const businessName = businessProfile?.name || session?.user?.name || "Merchant";
+  const businessId = (session?.user as any)?.id;
   const customersList = customersData || [];
   const requestsList = pendingData || [];
   const pendingCount = requestsList.filter((r) => r.status === "pending").length;
 
   const totalCustomersCount = customersList.length;
   const totalPointsAwarded = customersList.reduce((sum, c) => sum + (c.points || 0), 0);
+
+  const stats = [
+    {
+      label: "Total Customers",
+      value: totalCustomersCount.toString(),
+      icon: Users,
+    },
+    {
+      label: "Points Awarded",
+      value: totalPointsAwarded.toLocaleString(),
+      icon: TrendingUp,
+    },
+    {
+      label: "Pending Requests",
+      value: pendingCount.toString(),
+      icon: ClipboardList,
+    },
+  ];
 
   const handleSignOut = () => {
     toast.success("Signed out", "You have been logged out safely.");
@@ -49,9 +69,17 @@ export default function MerchantDashboardPage() {
         </div>
 
         <MerchantOverview
-          totalCustomers={totalCustomersCount}
-          totalPointsAwarded={totalPointsAwarded}
-          pendingRequests={pendingCount}
+          businessName={businessName}
+          businessId={businessId}
+          stats={stats}
+          requestsList={requestsList}
+          pendingLoading={false}
+          onPageSwitch={() => {}}
+          onShowProductsModal={() => {}}
+          onShowAddCustomer={() => {}}
+          onApproveRequest={() => {}}
+          onRejectRequest={() => {}}
+          onAddProductsToRequest={() => {}}
         />
       </div>
     </DashboardLayout>

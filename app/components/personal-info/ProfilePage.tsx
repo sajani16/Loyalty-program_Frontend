@@ -1,18 +1,79 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Camera, Loader2 } from "lucide-react";
+import { ArrowLeft, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
-import { useCustomerProfile, useUpdateCustomerProfile, useUpdateProfileImageMutation } from "@/customer/api";
-import { useBusinessProfile, useUpdateBusinessProfile, useUpdateBusinessLogoMutation } from "@/merchant/api";
+import {
+  useCustomerProfile,
+  useUpdateCustomerProfile,
+  useUpdateProfileImageMutation,
+} from "@/customer/api";
+import {
+  useBusinessProfile,
+  useUpdateBusinessProfile,
+  useUpdateBusinessLogoMutation,
+} from "@/merchant/api";
 
 interface ProfilePageProps {
   onBack: () => void;
   userType: "customer" | "merchant";
+}
+
+/* ─── Skeleton Loader for Form ───────────────────────── */
+function ProfileFormSkeleton({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="w-full max-w-md space-y-8 text-left animate-pulse">
+      {/* Header Skeleton */}
+      <div className="space-y-3">
+        <button
+          onClick={onBack}
+          type="button"
+          className="inline-flex items-center gap-2 text-xs font-medium tracking-wide uppercase transition-opacity hover:opacity-75"
+          style={{ color: "var(--muted)" }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+        <div className="space-y-2">
+          <div className="h-7 w-48 rounded-md bg-border-subtle/60" />
+          <div className="h-4 w-64 rounded-md bg-border-subtle/40" />
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {/* Avatar Skeleton */}
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-border-subtle/60 shrink-0" />
+          <div className="h-8 w-28 rounded-md bg-border-subtle/40" />
+        </div>
+
+        {/* Input Skeletons */}
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <div className="h-3 w-16 rounded bg-border-subtle/40" />
+            <div className="h-10 w-full rounded-md bg-border-subtle/30" />
+          </div>
+          <div className="space-y-1.5">
+            <div className="h-3 w-24 rounded bg-border-subtle/40" />
+            <div className="h-10 w-full rounded-md bg-border-subtle/30" />
+          </div>
+          <div className="space-y-1.5">
+            <div className="h-3 w-24 rounded bg-border-subtle/40" />
+            <div className="h-10 w-full rounded-md bg-border-subtle/30" />
+          </div>
+        </div>
+
+        {/* Button Skeleton */}
+        <div className="pt-2">
+          <div className="h-10 w-full rounded-md bg-border-subtle/60" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function ProfilePage({ onBack, userType }: ProfilePageProps) {
@@ -27,9 +88,12 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
   const updateBusinessLogo = useUpdateBusinessLogoMutation();
 
   // Select appropriate hooks based on userType
-  const profileQuery = userType === "customer" ? customerProfile : merchantProfile;
-  const updateMutation = userType === "customer" ? updateCustomerProfile : updateMerchantProfile;
-  const logoMutation = userType === "customer" ? updateProfileImage : updateBusinessLogo;
+  const profileQuery =
+    userType === "customer" ? customerProfile : merchantProfile;
+  const updateMutation =
+    userType === "customer" ? updateCustomerProfile : updateMerchantProfile;
+  const logoMutation =
+    userType === "customer" ? updateProfileImage : updateBusinessLogo;
 
   const profileData = profileQuery.data;
 
@@ -59,7 +123,7 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
     }));
   };
 
-  // Only select image & create local preview (NO immediate API upload)
+  // Select image & create local preview
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -72,17 +136,15 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
     reader.readAsDataURL(file);
   };
 
-  // Save changes (executes profile text update AND image upload together)
+  // Save changes
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      // 1. Upload image if a new one was selected
       if (selectedFile) {
         await logoMutation.mutateAsync(selectedFile);
       }
 
-      // 2. Update profile details
       await updateMutation.mutateAsync(formData);
 
       toast({
@@ -90,7 +152,7 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
         description: "Profile updated successfully",
       });
 
-      setSelectedFile(null); // Clear pending file state on success
+      setSelectedFile(null);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -101,11 +163,7 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
   };
 
   if (profileQuery.isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--brand)" }} />
-      </div>
-    );
+    return <ProfileFormSkeleton onBack={onBack} />;
   }
 
   const existingImage =
@@ -130,7 +188,10 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
           Back
         </button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>
+          <h1
+            className="text-2xl font-semibold tracking-tight"
+            style={{ color: "var(--foreground)" }}
+          >
             Profile Settings
           </h1>
           <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
@@ -140,13 +201,19 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
       </div>
 
       <form onSubmit={handleSaveProfile} className="space-y-6">
-        {/* Left-aligned Minimal Avatar Uploader */}
+        {/* Avatar Uploader */}
         <div className="flex items-center gap-4">
-          <Avatar className="w-16 h-16 border" style={{ borderColor: "var(--border-subtle)" }}>
+          <Avatar
+            className="w-16 h-16 border"
+            style={{ borderColor: "var(--border-subtle)" }}
+          >
             <AvatarImage src={currentImageSource} className="object-cover" />
             <AvatarFallback
               className="text-sm font-medium"
-              style={{ backgroundColor: "var(--surface)", color: "var(--foreground)" }}
+              style={{
+                backgroundColor: "var(--surface)",
+                color: "var(--foreground)",
+              }}
             >
               {profileData?.name?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
@@ -185,7 +252,11 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
         <div className="space-y-4">
           {/* Name Field */}
           <div className="space-y-1.5">
-            <Label htmlFor="name" className="text-xs font-medium" style={{ color: "var(--foreground)" }}>
+            <Label
+              htmlFor="name"
+              className="text-xs font-medium"
+              style={{ color: "var(--foreground)" }}
+            >
               Full Name
             </Label>
             <Input
@@ -204,9 +275,13 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
             />
           </div>
 
-          {/* Email Field (Disabled) */}
+          {/* Email Field */}
           <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-xs font-medium" style={{ color: "var(--foreground)" }}>
+            <Label
+              htmlFor="email"
+              className="text-xs font-medium"
+              style={{ color: "var(--foreground)" }}
+            >
               Email Address
             </Label>
             <Input
@@ -225,7 +300,11 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
 
           {/* Phone Field */}
           <div className="space-y-1.5">
-            <Label htmlFor="phone" className="text-xs font-medium" style={{ color: "var(--foreground)" }}>
+            <Label
+              htmlFor="phone"
+              className="text-xs font-medium"
+              style={{ color: "var(--foreground)" }}
+            >
               Phone Number
             </Label>
             <Input
@@ -257,14 +336,7 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
               color: "var(--brand-foreground)",
             }}
           >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving Changes...
-              </>
-            ) : (
-              "Save Changes"
-            )}
+            {isSaving ? "Saving Changes..." : "Save Changes"}
           </Button>
         </div>
       </form>
