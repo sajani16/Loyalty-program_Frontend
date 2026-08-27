@@ -87,13 +87,12 @@ export function ProfilePage({ onBack, userType }: ProfilePageProps) {
   const updateMerchantProfile = useUpdateBusinessProfile();
   const updateBusinessLogo = useUpdateBusinessLogoMutation();
 
+  const isCustomer = userType === "customer";
+
   // Select appropriate hooks based on userType
-  const profileQuery =
-    userType === "customer" ? customerProfile : merchantProfile;
-  const updateMutation =
-    userType === "customer" ? updateCustomerProfile : updateMerchantProfile;
-  const logoMutation =
-    userType === "customer" ? updateProfileImage : updateBusinessLogo;
+  const profileQuery = isCustomer ? customerProfile : merchantProfile;
+  const updateMutation = isCustomer ? updateCustomerProfile : updateMerchantProfile;
+  const logoMutation = isCustomer ? updateProfileImage : updateBusinessLogo;
 
   const profileData = profileQuery.data;
 

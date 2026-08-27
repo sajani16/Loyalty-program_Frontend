@@ -1,8 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Gift, Star, Check } from "lucide-react";
-import { LoyaltyRequestItem } from "@/services/merchant.service";
+import {
+  Coins,
+  Stamp,
+  Check,
+  Plus,
+  Trash2,
+  Tag,
+  AlertCircle,
+} from "lucide-react";
+import { LoyaltyRequestItem, Product } from "@/services/merchant.service";
 import { toast } from "@/hooks/use-toast";
 
 import {
@@ -10,7 +18,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -31,8 +38,13 @@ export interface CompletePayload {
   amountSpent?: number;
   products?: Array<{
     productId: string;
-    quantity: number;
+    stamps: number;
   }>;
+}
+
+interface StampProductLine {
+  productId: string;
+  stamps: number;
 }
 
 interface ProcessRequestModalProps {
@@ -41,6 +53,7 @@ interface ProcessRequestModalProps {
   request: LoyaltyRequestItem | null;
   onComplete: (payload: CompletePayload) => void;
   isLoading?: boolean;
+  stampProducts?: Product[];
 }
 
 export function ProcessRequestModal({
@@ -49,15 +62,19 @@ export function ProcessRequestModal({
   request,
   onComplete,
   isLoading = false,
+  stampProducts = [],
 }: ProcessRequestModalProps) {
   const [rewardType, setRewardType] = useState<RewardType>("point");
   const [amountSpent, setAmountSpent] = useState<number>(0);
+  const [stampLines, setStampLines] = useState<StampProductLine[]>([
+    { productId: "", stamps: 1 },
+  ]);
 
-  // Reset state when modal opens/closes or request changes
   useEffect(() => {
     if (isOpen) {
       setRewardType("point");
       setAmountSpent(0);
+      setStampLines([{ productId: "", stamps: 1 }]);
     }
   }, [isOpen, request]);
 
@@ -66,37 +83,48 @@ export function ProcessRequestModal({
   const customerName =
     request.businessCustomerId?.customerId?.name || "Customer";
 
-  const handleTypeChange = (type: RewardType) => {
-    setRewardType(type);
+  const addStampLine = () => {
+    setStampLines((prev) => [...prev, { productId: "", stamps: 1 }]);
   };
+
+  const removeStampLine = (idx: number) => {
+    setStampLines((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateStampLine = (
+    idx: number,
+    field: keyof StampProductLine,
+    value: string | number,
+  ) => {
+    setStampLines((prev) =>
+      prev.map((line, i) => (i === idx ? { ...line, [field]: value } : line)),
+    );
+  };
+
+  const validStampLines = stampLines.filter((l) => l.productId && l.stamps > 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (rewardType === "point" && amountSpent <= 0) {
-      toast.info(
-        "Amount Required",
-        "Enter the purchase amount to calculate points.",
-      );
+      toast.info("Enter amount", "Please enter total purchase amount.");
       return;
     }
 
-    if (rewardType === "stamp" && request.products.length === 0) {
-      toast.info(
-        "Products Required",
-        "Add at least one purchased product before awarding stamps.",
-      );
+    if (rewardType === "stamp" && validStampLines.length === 0) {
+      toast.info("Select product", "Please choose at least one product.");
       return;
     }
 
     onComplete({
       type: rewardType,
-      amountSpent: amountSpent > 0 ? amountSpent : undefined,
+      amountSpent:
+        rewardType === "point" && amountSpent > 0 ? amountSpent : undefined,
       products:
         rewardType === "stamp"
-          ? request.products.map(({ productId, quantity }) => ({
+          ? validStampLines.map(({ productId, stamps }) => ({
               productId,
-              quantity,
+              stamps,
             }))
           : undefined,
     });
@@ -104,90 +132,102 @@ export function ProcessRequestModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md w-[95vw] p-0 gap-0 overflow-hidden rounded-xl border border-border bg-background shadow-2xl">
-        {/* Header */}
-        <DialogHeader className="p-4 border-b border-border flex flex-row items-center justify-between space-y-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <Gift className="w-5 h-5" />
-            </div>
-            <div>
-              <DialogTitle className="text-base font-bold text-foreground leading-tight">
-                Award Loyalty
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                {customerName}
-              </DialogDescription>
-            </div>
-          </div>
+      <DialogContent className="sm:max-w-md w-[95vw] p-0 overflow-hidden rounded-xl border border-border-subtle bg-surface-card font-sora shadow-lg">
+        {/* Simple Header */}
+        <DialogHeader className="px-5 py-4 border-b border-border-subtle bg-surface">
+          <DialogTitle className="text-base font-semibold text-foreground">
+            Approve Request
+          </DialogTitle>
+          <p className="text-xs text-muted">
+            Customer:{" "}
+            <strong className="text-foreground">{customerName}</strong>
+          </p>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit}
-          className="p-4 space-y-4 max-h-[80vh] overflow-y-auto"
-        >
-          {/* Purchased Products Summary */}
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Purchased Items List (if available) */}
           {request.products && request.products.length > 0 && (
-            <div className="p-3 bg-muted/40 rounded-lg border border-border/60 space-y-2">
-              <p className="text-xs font-semibold text-foreground uppercase tracking-wider text-[11px]">
-                Products Purchased
-              </p>
-              <div className="space-y-1.5 divide-y divide-border/40">
-                {request.products.map((product, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between text-xs pt-1.5 first:pt-0"
-                  >
-                    <span className="font-medium text-foreground truncate max-w-[200px]">
-                      {product.productName}
-                    </span>
-                    <span className="text-muted-foreground font-mono">
-                      {product.quantity}x @ ${product.unitPrice}
-                    </span>
-                  </div>
-                ))}
+            <div className="p-3 bg-surface rounded-lg border border-border-subtle text-xs space-y-2">
+              <div className="flex items-center justify-between text-muted">
+                <span className="font-semibold uppercase tracking-wider text-[10px] flex items-center gap-1">
+                  <Tag className="w-3 h-3 text-brand" /> Items Claimed
+                </span>
+                <span className="text-[10px]">
+                  {request.products.length}{" "}
+                  {request.products.length === 1 ? "item" : "items"}
+                </span>
+              </div>
+              <div className="space-y-1.5 pt-0.5">
+                {request.products.map((product, idx) => {
+                  const productDetails =
+                    typeof product.productId === "object"
+                      ? product.productId
+                      : null;
+                  const productName = productDetails?.name || "Item";
+                  const targetStamps = productDetails?.stampTarget;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="flex justify-between items-center text-foreground font-medium bg-background/50 px-2.5 py-1.5 rounded border border-border-subtle/40"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{productName}</span>
+                        {targetStamps && (
+                          <span className="text-[10px] font-normal text-muted bg-surface px-1.5 py-0.5 rounded border border-border-subtle">
+                            Target: {targetStamps} stamps
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-brand-dark dark:text-brand font-semibold text-xs">
+                        +{product.stamps} stamps
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Reward Type Dropdown */}
+          {/* Reward Type Selection */}
           <div className="space-y-1.5">
-            <Label htmlFor="rewardType" className="text-xs font-medium">
-              Loyalty Type
+            <Label className="text-xs font-semibold text-foreground">
+              Reward Type
             </Label>
-            <Select
-              value={rewardType}
-              onValueChange={(val: RewardType) => handleTypeChange(val)}
-            >
-              <SelectTrigger id="rewardType" className="h-9 text-sm">
-                <SelectValue placeholder="Select reward type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="point">
-                  <div className="flex items-center gap-2">
-                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                    <span>Points</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="stamp">
-                  <div className="flex items-center gap-2">
-                    <Gift className="w-3.5 h-3.5 text-primary" />
-                    <span>Stamps</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setRewardType("point")}
+                className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-medium transition-all ${
+                  rewardType === "point"
+                    ? "border-brand bg-brand-muted text-brand-dark dark:text-brand font-semibold"
+                    : "border-border-subtle bg-background text-muted hover:text-foreground"
+                }`}
+              >
+                <Coins className="w-4 h-4" /> Points
+              </button>
+              <button
+                type="button"
+                onClick={() => setRewardType("stamp")}
+                className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-medium transition-all ${
+                  rewardType === "stamp"
+                    ? "border-brand bg-brand-muted text-brand-dark dark:text-brand font-semibold"
+                    : "border-border-subtle bg-background text-muted hover:text-foreground"
+                }`}
+              >
+                <Stamp className="w-4 h-4" /> Stamps
+              </button>
+            </div>
           </div>
 
-          {/* Dynamic Input based on Selected Reward Type */}
-          {rewardType === "point" ? (
-            <div className="space-y-1.5 animate-in fade-in-50 duration-150">
+          {/* Points Form */}
+          {rewardType === "point" && (
+            <div className="space-y-1.5">
               <Label
                 htmlFor="amountSpent"
-                className="flex items-center gap-1.5 text-xs font-medium"
+                className="text-xs font-semibold text-foreground"
               >
-                <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                Purchase Amount ($)
+                Total Bill Amount ($)
               </Label>
               <Input
                 id="amountSpent"
@@ -198,76 +238,130 @@ export function ProcessRequestModal({
                 onChange={(e) =>
                   setAmountSpent(parseFloat(e.target.value) || 0)
                 }
-                placeholder="Enter purchase amount"
-                className="h-9 text-sm"
+                placeholder="0.00"
+                className="h-10 text-sm border-border-subtle bg-background focus-visible:ring-brand"
               />
-              <p className="text-[11px] text-muted-foreground">
-                Points are calculated automatically from this amount.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-1.5 animate-in fade-in-50 duration-150">
-              <Label
-                htmlFor="stampProducts"
-                className="flex items-center gap-1.5 text-xs font-medium"
-              >
-                <Gift className="w-3.5 h-3.5 text-primary" />
-                Products for Stamp Progress
-              </Label>
-              <div
-                id="stampProducts"
-                className="rounded-md border bg-muted/30 px-3 py-2 text-sm"
-              >
-                {request.products.length > 0
-                  ? `${request.products.length} purchased product${request.products.length === 1 ? "" : "s"} selected`
-                  : "No purchased products added"}
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                Stamps are calculated from stamp-eligible purchased products.
+              <p className="text-[11px] text-muted">
+                Points will be awarded automatically based on the transaction
+                amount.
               </p>
             </div>
           )}
 
-          {/* Award Summary Card */}
-          <div className="p-3 bg-primary/5 rounded-lg border border-primary/15 space-y-1.5">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Summary
-            </span>
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Type:</span>
-                <span className="font-semibold capitalize text-foreground">
-                  {rewardType === "point" ? "Points" : "Stamps"}
-                </span>
+          {/* Stamps Form */}
+          {rewardType === "stamp" && (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-semibold text-foreground">
+                  Add Stamps
+                </Label>
+                <span className="text-[10px] text-muted">Qty to add</span>
               </div>
-              {rewardType === "stamp" && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Products:</span>
-                  <span className="font-bold text-primary">
-                    {request.products.length} selected
-                  </span>
+
+              {stampProducts.length === 0 ? (
+                <div className="p-3 border border-dashed border-border-subtle rounded-lg text-center text-xs text-muted flex items-center justify-center gap-2">
+                  <AlertCircle className="w-4 h-4" /> No stamp-eligible products
+                  found.
                 </div>
-              )}
-              {amountSpent > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Amount Spent:</span>
-                  <span className="font-semibold text-foreground">
-                    ${amountSpent.toFixed(2)}
-                  </span>
+              ) : (
+                <div className="space-y-2">
+                  {stampLines.map((line, idx) => {
+                    const selectedProduct = stampProducts.find(
+                      (p) => p._id === line.productId,
+                    );
+
+                    return (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <Select
+                              value={line.productId}
+                              onValueChange={(val) =>
+                                updateStampLine(idx, "productId", val)
+                              }
+                            >
+                              <SelectTrigger className="h-9 text-xs border-border-subtle bg-background">
+                                <SelectValue placeholder="Select product" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-surface-card border-border-subtle">
+                                {stampProducts.map((p) => (
+                                  <SelectItem
+                                    key={p._id}
+                                    value={p._id}
+                                    className="text-xs"
+                                  >
+                                    <div className="flex items-center justify-between w-full gap-2">
+                                      <span>{p.name}</span>
+                                      {p.stampTarget && (
+                                        <span className="text-[10px] text-muted">
+                                          ({p.stampTarget} stamps req.)
+                                        </span>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={line.stamps}
+                            onChange={(e) =>
+                              updateStampLine(
+                                idx,
+                                "stamps",
+                                parseInt(e.target.value) || 1,
+                              )
+                            }
+                            className="h-9 w-16 text-center text-xs border-border-subtle bg-background font-semibold"
+                          />
+                          {stampLines.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeStampLine(idx)}
+                              className="p-1.5 text-muted hover:text-red-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Informative text below selected product */}
+                        {/* {selectedProduct && selectedProduct.stampTarget && (
+                          <div className="text-[11px] text-muted px-1 flex justify-between">
+                            <span>
+                              Target: <strong className="text-foreground">{selectedProduct.stampTarget} stamps required</strong>
+                            </span>
+                            <span className="text-brand-dark dark:text-brand font-medium">
+                              Adding +{line.stamps}
+                            </span>
+                          </div>
+                        )} */}
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={addStampLine}
+                    className="flex items-center gap-1 text-xs font-medium text-brand-dark dark:text-brand hover:underline pt-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add product
+                  </button>
                 </div>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Footer Actions */}
-          <DialogFooter className="pt-2 flex-row gap-2 justify-end sm:justify-end">
+          {/* Action Buttons */}
+          <DialogFooter className="pt-3 flex flex-row justify-end gap-2 border-t border-border-subtle">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 sm:flex-none"
+              className="border-border-subtle bg-background text-foreground"
             >
               Cancel
             </Button>
@@ -278,17 +372,12 @@ export function ProcessRequestModal({
                 isLoading ||
                 (rewardType === "point"
                   ? amountSpent <= 0
-                  : request.products.length === 0)
+                  : validStampLines.length === 0)
               }
-              className="flex-1 sm:flex-none gap-1.5"
+              className="bg-brand text-brand-foreground hover:bg-brand-dark font-medium gap-1.5"
             >
-              {isLoading ? (
-                "Processing..."
-              ) : (
-                <>
-                  <Check className="w-3.5 h-3.5" /> Complete Request
-                </>
-              )}
+              <Check className="w-4 h-4" />{" "}
+              {isLoading ? "Saving..." : "Confirm & Award"}
             </Button>
           </DialogFooter>
         </form>

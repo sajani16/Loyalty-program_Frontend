@@ -120,9 +120,23 @@ export const usePendingRequests = () => {
   return useQuery({
     queryKey: ["pendingRequests"],
     queryFn: async () => {
-      const res = await merchantService.getPendingRequests();
+      const res = await merchantService.getPendingRequests("pending");
       return res.data;
     },
+  });
+};
+
+/**
+ * Hook to fetch all loyalty requests activity history for business
+ */
+export const useAllLoyaltyRequests = (page: number = 1, limit: number = 10, status: string = "all") => {
+  return useQuery({
+    queryKey: ["allLoyaltyRequests", page, limit, status],
+    queryFn: async () => {
+      const res = await merchantService.getAllLoyaltyRequests(page, limit, status);
+      return res;
+    },
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 };
 
@@ -193,7 +207,21 @@ export const useRejectRequestMutation = () => {
 };
 
 /**
- * Hook to fetch business products
+ * Hook to create a pending loyalty request for a customer
+ */
+export const useCreateLoyaltyRequestMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (businessCustomerId: string) =>
+      merchantService.createLoyaltyRequest(businessCustomerId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["pendingRequests"] });
+    },
+  });
+};
+
+/**
+ * Hook to fetch business products (all - active + inactive)
  */
 export const useBusinessProducts = () => {
   return useQuery({
@@ -201,6 +229,19 @@ export const useBusinessProducts = () => {
     queryFn: async () => {
       const res = await merchantService.getBusinessProducts();
       return res.data;
+    },
+  });
+};
+
+/**
+ * Hook to fetch only ACTIVE products for dropdowns
+ */
+export const useActiveProductsForDropdown = () => {
+  return useQuery({
+    queryKey: ["activeProductsForDropdown"],
+    queryFn: async () => {
+      const res = await merchantService.getActiveProductsForDropdown();
+      return res.data ?? [];
     },
   });
 };
@@ -245,6 +286,47 @@ export const useDeleteProductMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => merchantService.deleteProduct(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["businessProducts"] });
+    },
+  });
+};
+
+/**
+ * Hook to fetch stamp-eligible products (for the ProcessRequestModal)
+ */
+export const useStampEligibleProducts = () => {
+  return useQuery({
+    queryKey: ["stampEligibleProducts"],
+    queryFn: async () => {
+      const res = await merchantService.getStampEligibleProducts();
+      return res.data ?? [];
+    },
+  });
+};
+
+/**
+ * Hook to fetch all loyalty requests for a specific business customer
+ */
+export const useCustomerLoyaltyHistory = (businessCustomerId: string) => {
+  return useQuery({
+    queryKey: ["customerLoyaltyHistory", businessCustomerId],
+    queryFn: async () => {
+      const res = await merchantService.getCustomerLoyaltyHistory(businessCustomerId);
+      return res.data ?? [];
+    },
+    enabled: !!businessCustomerId,
+  });
+};
+
+/**
+ * Hook to toggle a product's active status
+ */
+export const useToggleProductMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      merchantService.toggleProduct(id, isActive),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["businessProducts"] });
     },

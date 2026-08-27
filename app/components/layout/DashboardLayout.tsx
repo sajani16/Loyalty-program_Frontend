@@ -63,7 +63,7 @@ export function DashboardLayout({
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       <aside className="hidden h-full w-60 shrink-0 overflow-hidden lg:flex lg:flex-col">
-        <PortalSidebar {...sharedSidebarProps} />
+        <PortalSidebar {...sharedSidebarProps} userType={userType} />
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -73,6 +73,7 @@ export function DashboardLayout({
         >
           <PortalSidebar
             {...sharedSidebarProps}
+            userType={userType}
             onClose={() => setMobileOpen(false)}
           />
         </SheetContent>

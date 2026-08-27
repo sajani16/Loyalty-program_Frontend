@@ -6,6 +6,7 @@ import {
   Playfair_Display,
   DM_Sans,
   Sora,
+  Quicksand,
 } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
@@ -19,6 +20,12 @@ const sora = Sora({
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
+});
+
+const quicksand = Quicksand({
+  subsets: ["latin"],
+  variable: "--font-quicksand",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const inter = Inter({
@@ -56,7 +63,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${sora.variable} ${dmSans.variable} ${inter.variable} ${roboto.variable} ${openSans.variable} ${playfairDisplay.variable}`}
+        className={`${sora.variable} ${dmSans.variable} ${quicksand.variable} ${inter.variable} ${roboto.variable} ${openSans.variable} ${playfairDisplay.variable}`}
       >
         <Providers>{children}</Providers>
       </body>

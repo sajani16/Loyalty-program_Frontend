@@ -22,7 +22,14 @@ export interface BusinessCustomerRecord {
   status: string;
   joinedAt: string;
   stampCards?: Array<{
-    productId: string;
+    productId: {
+      _id: string;
+      name: string;
+      price: number;
+      stampTarget: number;
+      stampEligible: boolean;
+      isActive: boolean;
+    };
     progress: number;
     completedCards: number;
   }>;
@@ -41,10 +48,8 @@ export interface LoyaltyRequestItem {
     points?: number;
   };
   products: Array<{
-    productId: string;
-    productName: string;
-    unitPrice: number;
-    quantity: number;
+    productId: string | { name: string; price: number; stampTarget?: number };
+    stamps: number;
   }>;
   status: string;
   amountSpent?: number;
@@ -61,7 +66,22 @@ export interface Product {
   type: "points" | "stamps";
   pointsValue?: number;
   stampsValue?: number;
+  stampsRequired?: number;
+  stampEligible?: boolean;
+  stampTarget?: number;
+  rewardQuantity?: number;
   description?: string;
+  isActive?: boolean;
+}
+
+export interface CustomerActivityItem {
+  _id: string;
+  status: string;
+  amountSpent?: number;
+  pointsAwarded?: number;
+  stampsAwarded?: number;
+  createdAt: string;
+  completedAt?: string;
 }
 
 export const merchantService = {
@@ -121,8 +141,25 @@ export const merchantService = {
     return res.data;
   },
 
-  async getPendingRequests(): Promise<ApiResponse<LoyaltyRequestItem[]>> {
-    const res = await api.get("/loyalty-requests/business/all");
+  async getPendingRequests(
+    status: string = "pending",
+  ): Promise<ApiResponse<LoyaltyRequestItem[]>> {
+    const params = new URLSearchParams({ status });
+    const res = await api.get(`/loyalty-requests/business/all?${params}`);
+    return res.data;
+  },
+
+  async getAllLoyaltyRequests(
+    page: number = 1,
+    limit: number = 10,
+    status: string = "all",
+  ): Promise<ApiResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(status !== "all" && { status }),
+    });
+    const res = await api.get(`/loyalty-requests/business/all?${params}`);
     return res.data;
   },
 
@@ -140,7 +177,7 @@ export const merchantService = {
       amountSpent?: number;
       products?: Array<{
         productId: string;
-        quantity: number;
+        stamps: number;
       }>;
     },
   ): Promise<ApiResponse> {
@@ -168,8 +205,32 @@ export const merchantService = {
     return res.data;
   },
 
+  async createLoyaltyRequest(businessCustomerId: string): Promise<ApiResponse> {
+    const res = await api.post("/loyalty-requests", { businessCustomerId });
+    return res.data;
+  },
+
   async getBusinessProducts(): Promise<ApiResponse<Product[]>> {
     const res = await api.get("/products");
+    return res.data;
+  },
+
+  async getActiveProductsForDropdown(): Promise<ApiResponse<Product[]>> {
+    const res = await api.get("/products/dropdown/active");
+    return res.data;
+  },
+
+  async getStampEligibleProducts(): Promise<ApiResponse<Product[]>> {
+    const res = await api.get("/products/stamps/eligible");
+    return res.data;
+  },
+
+  async getCustomerLoyaltyHistory(
+    businessCustomerId: string,
+  ): Promise<ApiResponse<CustomerActivityItem[]>> {
+    const res = await api.get(
+      `/loyalty-requests/business/customer/${businessCustomerId}`,
+    );
     return res.data;
   },
 
@@ -184,12 +245,20 @@ export const merchantService = {
     id: string,
     data: Partial<Product>,
   ): Promise<ApiResponse<Product>> {
-    const res = await api.put(`/products/${id}`, data);
+    const res = await api.patch(`/products/${id}`, data);
     return res.data;
   },
 
   async deleteProduct(id: string): Promise<ApiResponse> {
     const res = await api.delete(`/products/${id}`);
+    return res.data;
+  },
+
+  async toggleProduct(
+    id: string,
+    isActive: boolean,
+  ): Promise<ApiResponse<Product>> {
+    const res = await api.patch(`/products/${id}/toggle`, { isActive });
     return res.data;
   },
 };

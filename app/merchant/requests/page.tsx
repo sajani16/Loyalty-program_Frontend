@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { Loader2, ClipboardList } from "lucide-react";
+import { Loader2, ClipboardList, Plus, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
@@ -10,8 +10,14 @@ import {
   usePendingRequests,
   useCompleteRequestMutation,
   useRejectRequestMutation,
+  useBusinessCustomers,
+  useCreateLoyaltyRequestMutation,
+  useStampEligibleProducts,
 } from "../api";
-import { ProcessRequestModal, CompletePayload } from "@/components/merchant/ProcessRequestModal";
+import {
+  ProcessRequestModal,
+  CompletePayload,
+} from "@/components/merchant/ProcessRequestModal";
 import {
   AppDataTable,
   ColumnDefinition,
@@ -19,44 +25,131 @@ import {
   DualText,
 } from "@/components/ui/app-data-table";
 import { LoyaltyRequestItem } from "@/services/merchant.service";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
 
-interface LoyaltyRequest {
-  _id: string;
-  businessCustomerId: {
-    _id: string;
-    customerId: {
-      _id: string;
-      name: string;
-      email: string;
-    };
-    tier: string;
-    points: number;
+function CreateRequestModal({
+  isOpen,
+  onClose,
+  isLoading,
+  onSubmit,
+  customers,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  isLoading: boolean;
+  onSubmit: (customerId: string) => void;
+  customers: any[];
+}) {
+  const [selectedCustomer, setSelectedCustomer] = useState("");
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedCustomer.trim()) {
+      toast.info("Required", "Please select a customer.");
+      return;
+    }
+    onSubmit(selectedCustomer);
+    setSelectedCustomer("");
   };
-  amountSpent: number;
-  pointsAwarded: number;
-  stampsAwarded: number;
-  status: "pending" | "completed" | "rejected" | "expired";
-  expiresAt: string;
-  createdAt: string;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-md rounded-xl border border-border-subtle bg-surface shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border-subtle px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Plus className="w-4 h-4 text-brand" />
+            <h2 className="text-sm font-bold text-foreground">
+              Create Loyalty Request
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-md text-muted hover:text-foreground hover:bg-surface-card transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">
+              Select Customer *
+            </label>
+            <Select
+              value={selectedCustomer}
+              onValueChange={setSelectedCustomer}
+            >
+              <SelectTrigger className="w-full border-border-subtle bg-surface-card text-foreground text-sm focus:ring-brand/50">
+                <SelectValue placeholder="Select a customer" />
+              </SelectTrigger>
+              <SelectContent className="bg-surface border-border-subtle text-foreground">
+                {customers.map((cust) => (
+                  <SelectItem
+                    key={cust._id}
+                    value={cust._id}
+                    className="text-sm cursor-pointer focus:bg-emerald-500/10 "
+                  >
+                    {cust.customerId?.name || "Unknown"} (
+                    {cust.customerId?.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2 rounded-lg border border-border-subtle text-xs font-bold text-foreground hover:bg-surface-card transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 py-2 rounded-lg bg-brand text-brand-foreground text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {isLoading ? "Creating…" : "Create Request"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 export default function MerchantRequestsPage() {
   const { data: session } = useSession();
   const { data: businessProfile } = useBusinessProfile();
   const { data: pendingData, isLoading: pendingLoading } = usePendingRequests();
+  const { data: customersData } = useBusinessCustomers();
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(
     null,
   );
   const [showProcessing, setShowProcessing] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [page, setPage] = useState(1);
 
   const completeMutation = useCompleteRequestMutation();
   const rejectMutation = useRejectRequestMutation();
+  const createMutation = useCreateLoyaltyRequestMutation();
+  const { data: stampProductsData } = useStampEligibleProducts();
 
   const businessName =
     businessProfile?.name || session?.user?.name || "Merchant";
   const requestsList = (pendingData || []) as LoyaltyRequestItem[];
-  const selectedRequest = requestsList.find((r) => r._id === selectedRequestId) || null;
+  const selectedRequest =
+    requestsList.find((r) => r._id === selectedRequestId) || null;
+  const customers = (customersData || []) as any[];
 
   const handleSignOut = () => {
     toast.success("Signed out", "You have been logged out safely.");
@@ -106,6 +199,24 @@ export default function MerchantRequestsPage() {
         },
       );
     }
+  };
+
+  const handleCreateRequest = (businessCustomerId: string) => {
+    createMutation.mutate(businessCustomerId, {
+      onSuccess: () => {
+        toast.success(
+          "Request Created",
+          "Loyalty request created for customer.",
+        );
+        setShowCreateModal(false);
+      },
+      onError: (err) => {
+        toast.error(
+          "Creation Failed",
+          err instanceof Error ? err.message : "Failed to create request.",
+        );
+      },
+    });
   };
 
   const columns: ColumnDefinition<LoyaltyRequestItem>[] = [
@@ -197,17 +308,24 @@ export default function MerchantRequestsPage() {
       headerTitle="Loyalty Requests"
     >
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">
-            Loyalty Requests
-          </h1>
-          <p className="text-sm text-muted">
-            Review and process customer loyalty requests
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              Loyalty Requests
+            </h1>
+            <p className="text-sm text-muted">
+              Review and process pending customer loyalty requests
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand text-brand-foreground text-xs font-bold hover:opacity-90 transition-opacity shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Request
+          </button>
         </div>
 
-        {/* Empty State */}
         {requestsList.length === 0 && !pendingLoading ? (
           <div className="text-center py-20">
             <ClipboardList className="w-12 h-12 text-muted mx-auto mb-4 opacity-20" />
@@ -233,7 +351,6 @@ export default function MerchantRequestsPage() {
         )}
       </div>
 
-      {/* Process Modal */}
       {showProcessing && selectedRequest && (
         <ProcessRequestModal
           isOpen={showProcessing}
@@ -244,8 +361,17 @@ export default function MerchantRequestsPage() {
           request={selectedRequest}
           onComplete={handleProcessSubmit}
           isLoading={completeMutation.isPending}
+          stampProducts={stampProductsData || []}
         />
       )}
+
+      <CreateRequestModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        isLoading={createMutation.isPending}
+        onSubmit={handleCreateRequest}
+        customers={customers}
+      />
     </DashboardLayout>
   );
 }

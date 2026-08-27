@@ -64,7 +64,9 @@ export function LoyaltyRequestCard({
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-foreground text-xs">{customerName}</p>
+          <p className="font-semibold text-foreground text-xs">
+            {customerName}
+          </p>
           <p className="text-[10px] text-muted truncate">{customerEmail}</p>
         </div>
 
@@ -103,10 +105,12 @@ export function LoyaltyRequestCard({
                       className="flex items-center justify-between px-2.5 py-1.5 bg-surface rounded-md text-xs"
                     >
                       <span className="text-foreground font-medium">
-                        {product.productName}
+                        {typeof product.productId === "object"
+                          ? product.productId.name
+                          : "Item"}
                       </span>
                       <span className="text-muted">
-                        {product.quantity}x @ ${product.unitPrice}
+                        {product.stamps} stamp{product.stamps === 1 ? "" : "s"}
                       </span>
                     </div>
                   ))}
@@ -143,7 +147,9 @@ export function LoyaltyRequestCard({
             {/* Time Info */}
             <div className="text-[10px] text-muted space-y-1 px-2.5 py-1.5 bg-surface rounded-md">
               <p>
-                <span className="font-semibold text-foreground">Requested:</span>{" "}
+                <span className="font-semibold text-foreground">
+                  Requested:
+                </span>{" "}
                 {new Date(request.createdAt).toLocaleDateString()}
               </p>
               <p>

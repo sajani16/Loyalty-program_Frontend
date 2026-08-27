@@ -16,6 +16,7 @@ const config: Config = {
       fontFamily: {
         // sans: ["var(--font-bricolage-grotesque)", "sans-serif"],
          sans: ["var(--font-dm-sans)", "sans-serif"],
+        quicksand: ["var(--font-quicksand)", "sans-serif"],
         // title: ["var(--font-sora)", "sans-serif"],
 
       },

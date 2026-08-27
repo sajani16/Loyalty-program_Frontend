@@ -257,7 +257,9 @@ export default function MembershipDetailsPage() {
                     : card.productId?.name || `Loyalty Card #${idx + 1}`;
 
                 const completedCount = card.completedCards || 0;
-                const totalStamps = 10;
+                const progress = card.progress || 0;
+                // Get stampTarget from product if available, otherwise default to 10
+                const stampTarget = typeof card.productId === "object" ? card.productId?.stampTarget || 10 : 10;
 
                 return (
                   <div
@@ -279,11 +281,11 @@ export default function MembershipDetailsPage() {
                       </div>
                     </div>
 
-                    {/* Physical Grid of 10 Stamps */}
+                    {/* Physical Grid of Stamps */}
                     <div className="grid grid-cols-5 gap-3 sm:gap-4 py-2">
-                      {Array.from({ length: totalStamps }).map((_, i) => {
-                        const isStamped = i < completedCount;
-                        const isReward = i === totalStamps - 1;
+                      {Array.from({ length: stampTarget }).map((_, i) => {
+                        const isStamped = i < progress;
+                        const isReward = i === stampTarget - 1;
 
                         return (
                           <div
@@ -332,9 +334,9 @@ export default function MembershipDetailsPage() {
 
                     {/* Footer of Card */}
                     <div className="bg-surface/60 border border-border-subtle rounded-xl p-3 flex items-center justify-between text-xs text-muted">
-                      <span>Collect 10 stamps to unlock your reward!</span>
+                      <span>Collect {stampTarget} stamps to unlock your reward!</span>
                       <span className="font-bold text-foreground">
-                        {completedCount}/10
+                        {progress}/{stampTarget}
                       </span>
                     </div>
                   </div>

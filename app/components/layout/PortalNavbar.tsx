@@ -55,7 +55,7 @@ export function PortalNavbar({
 
   return (
     <>
-      <header className="z-20 flex h-14 shrink-0 items-center justify-between border-b border-border-subtle bg-surface/90 px-4 backdrop-blur-md">
+      <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-border-subtle bg-surface/95 px-4 shadow-sm backdrop-blur-md lg:px-6">
         <div className="flex items-center gap-3">
           <button
             className="rounded-md p-1 text-muted hover:text-foreground lg:hidden"
@@ -64,7 +64,12 @@ export function PortalNavbar({
           >
             <Menu className="h-5 w-5" />
           </button>
-          <h1 className="text-sm font-bold text-foreground">{headerTitle}</h1>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
+              {isMerchant ? "Business workspace" : "Customer workspace"}
+            </p>
+            <h1 className="text-sm font-bold text-foreground">{headerTitle}</h1>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

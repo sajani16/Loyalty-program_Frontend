@@ -52,8 +52,8 @@ export function MerchantOverview({
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-foreground mb-1">
+      <div className="mb-5">
+        <h2 className="mb-1 text-2xl font-bold text-foreground">
           Good day, {businessName?.split(" ")[0] || "Merchant"} 🏪
         </h2>{" "}
         <p className="text-xs text-muted">
@@ -61,11 +61,11 @@ export function MerchantOverview({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {(stats ?? []).map(({ label, value, icon: Icon }) => (
           <div
             key={label}
-            className="bg-surface-card rounded-xl p-4 border border-border-subtle hover:border-brand/40 transition-all shadow-sm"
+            className="rounded-xl border border-border-subtle bg-surface-card p-4 shadow-sm transition-all hover:border-brand/40"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="w-8 h-8 rounded-md bg-brand/10 flex items-center justify-center">
@@ -79,8 +79,8 @@ export function MerchantOverview({
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="space-y-4 lg:col-span-1">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-1">
           {businessId && (
             <QRCodeDisplay
               businessId={businessId}
@@ -130,7 +130,7 @@ export function MerchantOverview({
           </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-4">
+        <div className="space-y-5 lg:col-span-2">
           <div className="bg-surface-card rounded-xl border border-border-subtle shadow-sm overflow-hidden flex flex-col h-full">
             <div className="px-4 py-3 border-b border-border-subtle bg-surface/30 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export function MerchantOverview({
                 View All
               </button>
             </div>
-            <div className="p-3 space-y-2 overflow-y-auto flex-1 max-h-[400px]">
+            <div className="max-h-[360px] flex-1 space-y-2 overflow-y-auto p-3">
               {pendingLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted py-10">
                   <Loader2 className="w-5 h-5 text-brand animate-spin mb-2" />
